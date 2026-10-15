@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>8ZENNX SENSI - SENSI ADB</title>
+    
+    <!-- Configuración PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b0b0f">    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b0b0f">
+    <link rel="apple-touch-icon" href="icono.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
+    </script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        voidBg: '#0b0b0f',
+                        voidCard: '#1a0508',
+                        voidBorder: '#5c1018',
+                        voidAccent: '#ff1744',
+                        platinumText: '#f1f5f9',
+                        subtext: '#b9a1a5'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome & Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDKs vía CDN -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGPP9nl2F3DlTrh4_qtW__sf3ppwk0Kqg",
+            authDomain: "optimi-2f233.firebaseapp.com",
+            projectId: "optimi-2f233",
+            storageBucket: "optimi-2f233.firebasestorage.app",
+            messagingSenderId: "761166629993",
+            appId: "1:761166629993:web:7e04e4674ba160354426f8",
+            measurementId: "G-WW2091GHDE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+
+        window.firebaseAuth = auth;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.signOut = signOut;
+
+        onAuthStateChanged(auth, (user) => {
+            const modalAuth = document.getElementById('firebase-auth-modal');
+            if (user) {
+                if(modalAuth) modalAuth.classList.add('hidden');
+            } else {
+                if(modalAuth) modalAuth.classList.remove('hidden');
+            }
+        });
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0b0f;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* Imagen de fondo inmersiva (1000015980.png) */
+        .app-bg-image {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('1000015980.png');
+            background-size: cover;
+            background-position: center;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .app-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 5, 7, 0.82);
+            backdrop-filter: blur(4px);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .app-content-layer {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Splash Screen Animado de Entrada (animacion.mp4) */
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            background: #0b0b0f;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease;
+        }
+
+        .header-banner {
+            background: linear-gradient(180deg, rgba(255, 23, 68, 0.45) 0%, rgba(26, 5, 8, 0.85) 80%, rgba(11, 11, 15, 0.95) 100%);
+            border-bottom: 1px solid rgba(255, 23, 68, 0.25);
+            backdrop-filter: blur(12px);
+        }
+
+        .profile-btn {
+            background-color: rgba(26, 5, 8, 0.85);
+            border: 1px solid #5c1018;
+            color: #b9a1a5;
+            border-radius: 9999px;
+            font-weight: 700;
+            padding: 6px 10px;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .profile-btn.active {
+            background-color: #ff1744;
+            color: #ffffff;
+            border-color: #ff1744;
+            box-shadow: 0 0 15px rgba(255, 23, 68, 0.6);
+        }
+
+        .tabs-container {
+            display: flex;
+            gap: 10px;
+            min-width: max-content;
+            padding: 4px 2px;
+        }
+
+        .cat-tab {
+            color: #b9a1a5;
+            background: rgba(26, 5, 8, 0.85);
+            border: 1px solid #5c1018;
+            font-weight: 600;
+            white-space: nowrap;
+            padding: 7px 16px;
+            font-size: 11px;
+            border-radius: 9999px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .cat-tab.active {
+            color: #ffffff;
+            background-color: #ff1744;
+            border-color: #ff1744;
+            font-weight: 800;
+            box-shadow: 0 0 12px rgba(255, 23, 68, 0.6);
+        }
+
+        .switch-capsule {
+            position: relative;
+            width: 46px;
+            height: 24px;
+            background-color: #5c1018;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .switch-capsule::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background-color: #b9a1a5;
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        input.hidden-toggle:checked + .switch-capsule {
+            background-color: #ff1744;
+            box-shadow: 0 0 15px rgba(255, 23, 68, 0.8), inset 0 0 5px rgba(255, 255, 255, 0.4);
+            border-color: #ff758c;
+        }
+        input.hidden-toggle:checked + .switch-capsule::after {
+            transform: translateX(22px);
+            background-color: #ffffff;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center">
+
+    <!-- SPLASH SCREEN DE ENTRADA (animacion.mp4) -->
+    <div id="splash-screen">
+        <video id="splash-video" autoplay muted playsinline webkit-playsinline class="w-full h-full object-cover">
+            <source src="animacion.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <!-- IMAGEN DE FONDO INMERSIVA (1000015980.png) -->
+    <div class="app-bg-image"></div>
+    <div class="app-overlay"></div>
+
+    <!-- MODAL DE AUTENTICACIÓN FIREBASE -->
+    <div id="firebase-auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[999] flex items-center justify-center p-4 hidden">
+        <div class="bg-voidCard border border-voidBorder rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl">
+            <div class="text-center space-y-1">
+                <h2 class="text-base font-black text-platinumText">ACCESO SEGURO FIREBASE</h2>
+                <p class="text-[10px] text-subtext">Inicia sesión o regístrate para usar el optimizador</p>
+            </div>
+            
+            <div class="space-y-3">
+                <input type="email" id="auth-email" placeholder="Correo electrónico" class="w-full bg-black/50 border border-voidBorder rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-voidAccent">
+                <input type="password" id="auth-password" placeholder="Contraseña" class="w-full bg-black/50 border border-voidBorder rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-voidAccent">
+                
+                <div id="auth-error" class="text-[10px] text-red-500 text-center font-bold hidden"></div>
+
+                <div class="grid grid-cols-2 gap-2 pt-2">
+                    <button onclick="handleLogin()" class="py-2.5 bg-voidAccent text-white font-black text-xs rounded-xl uppercase shadow-lg hover:brightness-110 transition-all cursor-pointer">ENTRAR</button>
+                    <button onclick="handleRegister()" class="py-2.5 bg-black/50 border border-voidBorder text-platinumText font-black text-xs rounded-xl uppercase hover:bg-voidBorder/40 transition-all cursor-pointer">REGISTRAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app-container" class="app-content-layer w-full min-h-screen sm:max-w-md bg-transparent sm:rounded-3xl border-0 sm:border border-voidBorder shadow-2xl flex flex-col relative overflow-hidden pb-24">
+        
+        <!-- HEADER TOP -->
+        <header class="header-banner pt-4 px-4 pb-3 sticky top-0 z-30 space-y-3">
+            
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-base font-black tracking-tight text-platinumText flex items-center gap-2">8ZENNX SENSI</h1>
+                    <p class="text-[10px] text-voidAccent font-bold uppercase tracking-wider">SENSI ADB GAME BOOSTER</p>
+                </div>
+                <div class="bg-black/70 backdrop-blur-md border border-green-500/40 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span class="text-[9px] font-extrabold text-green-400 tracking-wider">ACESSO ADB · PRONTO</span>
+                </div>
+            </div>
+
+            <!-- CARD DE DISPOSITIVO 100% DINÁMICA -->
+            <div class="bg-black/75 backdrop-blur-md border border-voidBorder rounded-2xl p-3 space-y-2 shadow-lg">
+                <div id="device-model" class="font-black text-xs text-platinumText flex items-center gap-1.5">
+                    <i class="fa-solid fa-mobile-screen text-voidAccent text-sm"></i> Leyendo dispositivo...
+                </div>
+                <div id="device-specs" class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pt-0.5">
+                    <span class="bg-[#2c070d] border border-red-500/30 text-red-300 text-[9px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">Analizando OS...</span>
+                    <span class="bg-[#2c070d] border border-red-500/30 text-red-300 text-[9px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">Analizando Hz...</span>
+                    <span class="bg-[#2c070d] border border-red-500/30 text-red-300 text-[9px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">Analizando RAM...</span>
+                </div>
+                <p class="text-[9px] text-subtext">Características reales leídas del sistema</p>
+            </div>
+
+            <!-- PERFIL TIPO CÁPSULA -->
+            <div class="space-y-1 pt-1">
+                <span class="text-[9px] font-bold text-subtext uppercase tracking-wider px-1">PERFIL</span>
+                <div class="grid grid-cols-4 gap-1.5">
+                    <button onclick="setPerfil('extremo')" id="perfil-extremo" class="profile-btn text-center">EXTREMO</button>
+                    <button onclick="setPerfil('equilibrado')" id="perfil-equilibrado" class="profile-btn text-center">EQUILIB.</button>
+                    <button onclick="setPerfil('bateria')" id="perfil-bateria" class="profile-btn text-center">BATERIA</button>
+                    <button onclick="setPerfil('personal')" id="perfil-personal" class="profile-btn active text-center">PERSONAL</button>
+                </div>
+            </div>
+
+            <!-- BARRA HORIZONTAL DE CATEGORÍAS -->
+            <div class="overflow-x-auto custom-scrollbar border-t border-voidBorder/40">
+                <div class="tabs-container">
+                    <button onclick="switchTab('jogos')" id="tab-btn-jogos" class="cat-tab active">JOGOS</button>
+                    <button onclick="switchTab('boost')" id="tab-btn-boost" class="cat-tab">BOOST</button>
+                    <button onclick="switchTab('gpu')" id="tab-btn-gpu" class="cat-tab">GPU</button>
+                    <button onclick="switchTab('cpu')" id="tab-btn-cpu" class="cat-tab">CPU</button>
+                    <button onclick="switchTab('audio')" id="tab-btn-audio" class="cat-tab">ÁUDIO</button>
+                    <button onclick="switchTab('rede')" id="tab-btn-rede" class="cat-tab">REDE</button>
+                    <button onclick="switchTab('visual')" id="tab-btn-visual" class="cat-tab">VISUAL</button>
+                    <button onclick="switchTab('toque')" id="tab-btn-toque" class="cat-tab">TOQUE</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            
+            <!-- TAB 1: JOGOS -->
+            <div id="tab-jogos" class="tab-page space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xs font-bold text-platinumText uppercase tracking-wider">MEUS JOGOS</h2>
+                        <p class="text-[9px] text-subtext">Toque pra jogar · segure pra ver detalhes</p>
+                    </div>
+                    <button onclick="abrirModalApps()" class="px-3.5 py-1.5 bg-voidAccent/20 border border-voidAccent/60 rounded-full text-voidAccent text-xs font-black flex items-center gap-1 shadow-md hover:bg-voidAccent/30 transition-all cursor-pointer">
+                        <i class="fa-solid fa-plus text-[10px]"></i> ADICIONAR
+                    </button>
+                </div>
+
+                <div id="lista-apps" class="grid grid-cols-2 gap-3"></div>
+
+                <div class="space-y-2 pt-2">
+                    <h2 class="text-xs font-bold text-platinumText uppercase tracking-wider">MOTOR INTELIGENTE</h2>
+                    
+                    <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                        <div>
+                            <h3 class="text-xs font-bold text-platinumText">Detecção Automática</h3>
+                            <p class="text-[10px] text-subtext">Turbina o jogo aberto de qualquer lugar</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="hidden-toggle sr-only">
+                            <div class="switch-capsule"></div>
+                        </label>
+                    </div>
+
+                    <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                        <div>
+                            <h3 class="text-xs font-bold text-platinumText">IA SENSI 8ZENNX</h3>
+                            <p class="text-[10px] text-subtext">Aprende e ajusta cada mira e toque</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="hidden-toggle sr-only">
+                            <div class="switch-capsule"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: BOOST -->
+            <div id="tab-boost" class="tab-page hidden space-y-4">
+                <h2 class="text-xs font-bold text-platinumText uppercase tracking-wider">ANTES DE JOGAR</h2>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl space-y-1 shadow-md">
+                        <i class="fa-solid fa-bolt text-voidAccent text-base"></i>
+                        <h3 class="text-xs font-bold text-platinumText">Anti-Travadas</h3>
+                        <p class="text-[9px] text-subtext">Pré-compila jogos, menos travadas</p>
+                    </div>
+                    <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl space-y-1 shadow-md">
+                        <i class="fa-solid fa-rocket text-voidAccent text-base"></i>
+                        <h3 class="text-xs font-bold text-platinumText">Boost de Abertura</h3>
+                        <p class="text-[9px] text-subtext">Carregamento mais rápido no 1º minuto</p>
+                    </div>
+                </div>
+
+                <!-- CÓDIGOS SET EDIT V4 -->
+                <div class="p-3.5 bg-voidCard/80 backdrop-blur-md border border-voidBorder rounded-2xl space-y-2 mt-2 shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-voidAccent">CÓDIGOS SET EDIT V4</span>
+                        <span class="text-[9px] text-subtext">Toca para copiar</span>
+                    </div>
+                    <div id="setedit-codes-box" class="w-full h-28 bg-black/70 border border-voidBorder rounded-xl p-2.5 text-[10px] font-mono text-emerald-400 overflow-y-auto select-all whitespace-pre-wrap">settings put global window_animation_scale 0.5
+settings put global transition_animation_scale 0.5
+settings put global animator_duration_scale 0.4
+pm trim-caches 999G
+settings put secure long_press_timeout 150
+settings put secure multi_press_timeout 100
+settings put system touch_precision_mode 1
+settings put global input_boost_enabled 1
+settings put global touch_boost 1
+settings put system peak_refresh_rate 120.0
+settings put system min_refresh_rate 60.0
+settings put system fling_velocity_min 500
+settings put system fling_velocity_max 12000
+settings put system touch.pressure.scale 0.003
+settings put system touch.size.scale 1.0
+settings put system show_touches 0
+am force-stop com.google.android.apps.photos
+am force-stop com.android.chrome</div>
+                    <button onclick="copiarCodigosSetEdit()" class="w-full py-2.5 bg-voidAccent text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-copy"></i> COPIAR CÓDIGOS SET EDIT V4
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 3: GPU -->
+            <div id="tab-gpu" class="tab-page hidden space-y-3">
+                <h2 class="text-xs font-bold text-platinumText uppercase tracking-wider">TELA E RENDERIZAÇÃO GPU</h2>
+                
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Hz Máximo Forzado</h3>
+                        <p class="text-[10px] text-subtext">Fuerza la tasa de refresco máxima de pantalla</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Aceleración Vulkan Forzada</h3>
+                        <p class="text-[10px] text-subtext">Renderizado fluido y menor carga en CPU</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Eliminar Desenfoque (Blur)</h3>
+                        <p class="text-[10px] text-subtext">Desactiva efectos visuales pesados del sistema</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- TAB 4: CPU -->
+            <div id="tab-cpu" class="tab-page hidden space-y-3">
+                <h2 class="text-xs font-bold text-platinumText uppercase tracking-wider">OPTIMIZACIÓN DE CPU</h2>
+                
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Pausar Backup Automático</h3>
+                        <p class="text-[10px] text-subtext">Evita tareas en segundo plano durante la partida</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Bloqueo de Alarmas y Notificaciones</h3>
+                        <p class="text-[10px] text-subtext">Impide interrupciones y tirones de rendimiento</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Prioridad de Hilos de Núcleo</h3>
+                        <p class="text-[10px] text-subtext">Asigna toda la potencia al juego activo</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- TAB 5: ÁUDIO -->
+            <div id="tab-audio" class="tab-page hidden space-y-3">
+                <h2 class="text-xs font-bold text-platinumText uppercase tracking-wider">GESTIÓN DE ÁUDIO Y PASOS</h2>
+                
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Audio Ultra Baja Latencia</h3>
+                        <p class="text-[10px] text-subtext">Sincronización perfecta de disparos y pasos</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Amplificador de Frecuencia de Voz</h3>
+                        <p class="text-[10px] text-subtext">Mejora el chat de escuadrón en partida</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- TAB 6: REDE -->
+            <div id="tab-rede" class="tab-page hidden space-y-3">
+                <h2 class="text-xs font-bold text-platinumText uppercase tracking-wider">CONEXIÓN Y ESTABILIDAD DE RED</h2>
+                
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Estabilizador de Ping Avanzado</h3>
+                        <p class="text-[10px] text-subtext">Reduce saltos de latencia y picos de lag</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Prioridad de Paquetes UDP Gaming</h3>
+                        <p class="text-[10px] text-subtext">Optimiza la ruta con el servidor del juego</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- TAB 7: VISUAL -->
+            <div id="tab-visual" class="tab-page hidden space-y-3">
+                <h2 class="text-xs font-bold text-platinumText uppercase tracking-wider">CALIDAD GRÁFICA Y COLOR</h2>
+                
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Anti-Serrilhado 4x Extremo</h3>
+                        <p class="text-[10px] text-subtext">Bordes ultra limpios sin dientes de sierra</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Colores Vivos / Saturación Óptima</h3>
+                        <p class="text-[10px] text-subtext">Mejora la visibilidad de enemigos en mapas oscuros</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- TAB 8: TOQUE -->
+            <div id="tab-toque" class="tab-page hidden space-y-3">
+                <h2 class="text-xs font-bold text-platinumText uppercase tracking-wider">SENSIBILIDAD Y TÁCTIL 8ZENNX</h2>
+                
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Toque Rápido 120Hz/240Hz</h3>
+                        <p class="text-[10px] text-subtext">Reduce el tiempo de respuesta del panel táctil</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+
+                <div class="p-3.5 bg-voidCard/75 backdrop-blur-md border border-voidBorder rounded-2xl flex items-center justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-platinumText">Estabilidad de Mira DPI</h3>
+                        <p class="text-[10px] text-subtext">Evita aceleración brusca al deslizar el dedo</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="hidden-toggle sr-only">
+                        <div class="switch-capsule"></div>
+                    </label>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- FOOTER / BOTÓN PARAR BOOST -->
+        <footer class="app-content-layer fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-gradient-to-t from-[#0b0b0f] via-[#0b0b0f]/90 to-transparent z-40 text-center">
+            <button onclick="handleLogout()" class="w-full py-3.5 bg-voidAccent text-white font-black text-sm rounded-2xl uppercase tracking-widest shadow-2xl hover:brightness-110 transition-all flex items-center justify-center gap-2 border border-red-500/30 cursor-pointer">
+                <i class="fa-solid fa-power-off"></i> CERRAR SESIÓN / PARAR BOOST
+            </button>
+            <p class="text-[9px] text-subtext font-bold pt-2">14 otimizações ativas</p>
+        </footer>
+    </div>
+
+    <!-- MODAL DE SELECCIÓN DE APLICACIONES -->
+    <div id="modal-apps" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-voidCard/95 border border-voidBorder rounded-3xl w-full max-w-sm p-4 space-y-4 shadow-2xl max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-voidBorder pb-2">
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider">Seleccionar Aplicación</h3>
+                <button onclick="cerrarModalApps()" class="text-subtext hover:text-white text-sm cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-2 custom-scrollbar" id="catalogo-apps"></div>
+        </div>
+    </div>
+
+    <!-- NOTIFICACIÓN TOAST -->
+    <div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-voidAccent text-white text-xs font-extrabold px-5 py-2.5 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50">
+        ¡Códigos copiados con éxito!
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        const appsDisponibles = [
+            { nombre: 'Free Fire', pkg: 'com.dts.freefireth', icon: 'fa-solid fa-fire text-voidAccent', intent: 'intent://#Intent;package=com.dts.freefireth;scheme=freefire;end;' },
+            { nombre: 'Free Fire MAX', pkg: 'com.dts.freefiremax', icon: 'fa-solid fa-bolt text-amber-500', intent: 'intent://#Intent;package=com.dts.freefiremax;scheme=freefire;end;' },
+            { nombre: 'Roblox', pkg: 'com.roblox.client', icon: 'fa-solid fa-cube text-blue-400', intent: 'intent://#Intent;package=com.roblox.client;scheme=roblox;end;' },
+            { nombre: 'PUBG Mobile', pkg: 'com.tencent.ig', icon: 'fa-solid fa-crosshair text-yellow-500', intent: 'intent://#Intent;package=com.tencent.ig;end;' },
+            { nombre: 'Call of Duty', pkg: 'com.activision.callofduty.shooter', icon: 'fa-solid fa-shield-halved text-emerald-400', intent: 'intent://#Intent;package=com.activision.callofduty.shooter;end;' },
+            { nombre: 'TikTok', pkg: 'com.zhiliaoapp.musically', icon: 'fa-brands fa-tiktok text-pink-500', intent: 'intent://#Intent;package=com.zhiliaoapp.musically;end;' },
+            { nombre: 'WhatsApp', pkg: 'com.whatsapp', icon: 'fa-brands fa-whatsapp text-green-500', intent: 'intent://#Intent;package=com.whatsapp;end;' }
+        ];
+
+        window.addEventListener('load', () => {
+            const splashVid = document.getElementById('splash-video');
+            if(splashVid) splashVid.play().catch(() => {});
+
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if(splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => splash.remove(), 800);
+                }
+            }, 3500);
+
+            detectarHardwareUniversal();
+        });
+
+        // Funciones de Autenticación Firebase
+        function showAuthError(msg) {
+            const errBox = document.getElementById('auth-error');
+            errBox.innerText = msg;
+            errBox.classList.remove('hidden');
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            try {
+                await window.signInWithEmailAndPassword(window.firebaseAuth, email, pass);
+            } catch (error) {
+                showAuthError("Error: " + error.message);
+            }
+        }
+
+        async function handleRegister() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            try {
+                await window.createUserWithEmailAndPassword(window.firebaseAuth, email, pass);
+            } catch (error) {
+                showAuthError("Error: " + error.message);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await window.signOut(window.firebaseAuth);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function detectarHardwareUniversal() {
+            const ua = navigator.userAgent;
+            let modeloReal = "Dispositivo Móvil";
+            let osVersion = "Android";
+            let ramReal = navigator.deviceMemory ? navigator.deviceMemory + " GB RAM" : "6 GB RAM";
+            let hzReal = window.devicePixelRatio > 2 ? "90 / 120 Hz" : "60 Hz";
+            let gpuChip = "GPU Acelerada";
+
+            if (/android/i.test(ua)) {
+                let matchAndroid = ua.match(/Android\s([0-9\.]+)/);
+                osVersion = matchAndroid ? "Android " + matchAndroid[1] : "Android OS";
+
+                let matchModelo = ua.match(/\b(SM-[A-Z0-9]+|Redmi|POCO|TECNO|Infinix|V2[0-9]{3}|CPH[0-9]{4}|M2[0-9]{3}[A-Z0-9]+|Pixel\s[0-9a-zA-Z\s]+|Moto[gG]\w*)\b/i);
+                if (matchModelo) {
+                    modeloReal = matchModelo[0];
+                } else if (/TECNO/i.test(ua)) {
+                    modeloReal = "Tecno Device";
+                } else if (/Samsung/i.test(ua)) {
+                    modeloReal = "Galaxy Device";
+                } else if (/Xiaomi|Redmi/i.test(ua)) {
+                    modeloReal = "Xiaomi / Redmi";
+                } else {
+                    modeloReal = "Smartphone Android";
+                }
+                gpuChip = "Mali / Adreno GPU";
+            } else if (/iphone|ipad|ipod/i.test(ua)) {
+                let matchIOS = ua.match(/OS\s([0-9_]+)/);
+                osVersion = matchIOS ? "iOS " + matchIOS[1].replace(/_/g, '.') : "iOS";
+                modeloReal = /iPad/.test(ua) ? "Apple iPad" : "Apple iPhone";
+                ramReal = "4 / 6 GB RAM";
+                hzReal = "120 Hz ProMotion";
+                gpuChip = "Apple GPU";
+            }
+
+            document.getElementById('device-model').innerHTML = `<i class="fa-solid fa-mobile-screen text-voidAccent text-sm"></i> ${modeloReal}`;
+            document.getElementById('device-specs').innerHTML = `
+                <span class="bg-[#2c070d] border border-red-500/30 text-red-300 text-[9px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">${osVersion}</span>
+                <span class="bg-[#2c070d] border border-red-500/30 text-red-300 text-[9px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">${hzReal}</span>
+                <span class="bg-[#2c070d] border border-red-500/30 text-red-300 text-[9px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">${ramReal}</span>
+                <span class="bg-[#2c070d] border border-red-500/30 text-red-300 text-[9px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">${gpuChip}</span>
+            `;
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-page').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.cat-tab').forEach(btn => btn.classList.remove('active'));
+
+            const target = document.getElementById('tab-' + tabId);
+            const activeBtn = document.getElementById('tab-btn-' + tabId);
+
+            if (target) target.classList.remove('hidden');
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+
+        function setPerfil(perfilId) {
+            document.querySelectorAll('.profile-btn').forEach(b => b.classList.remove('active'));
+            const el = document.getElementById('perfil-' + perfilId);
+            if (el) el.classList.add('active');
+        }
+
+        function abrirModalApps() {
+            const catalogo = document.getElementById('catalogo-apps');
+            catalogo.innerHTML = '';
+            
+            appsDisponibles.forEach(app => {
+                const item = document.createElement('div');
+                item.className = "p-3 bg-black/40 border border-voidBorder rounded-xl flex items-center justify-between hover:border-voidAccent cursor-pointer transition-all";
+                item.onclick = () => seleccionarApp(app);
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-black border border-voidBorder flex items-center justify-center text-xl">
+                            <i class="${app.icon}"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white">${app.nombre}</h4>
+                            <p class="text-[9px] text-subtext">${app.pkg}</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-plus text-voidAccent text-xs"></i>
+                `;
+                catalogo.appendChild(item);
+            });
+
+            document.getElementById('modal-apps').classList.remove('hidden');
+        }
+
+        function cerrarModalApps() {
+            document.getElementById('modal-apps').classList.add('hidden');
+        }
+
+        function seleccionarApp(app) {
+            const listaApps = document.getElementById('lista-apps');
+            const card = document.createElement('a');
+            card.href = app.intent;
+            card.className = "bg-voidCard/75 backdrop-blur-md border border-voidBorder hover:border-voidAccent p-3.5 rounded-2xl flex flex-col items-center text-center space-y-2 transition-all group shadow-lg relative";
+            
+            card.innerHTML = `
+                <button onclick="event.preventDefault(); this.parentElement.remove();" class="absolute top-2 right-2 text-subtext hover:text-red-500 text-xs cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+                <div class="w-16 h-16 rounded-2xl bg-black border border-voidBorder flex items-center justify-center overflow-hidden shadow-xl group-hover:scale-105 transition-transform text-3xl">
+                    <i class="${app.icon}"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-platinumText">${app.nombre}</h3>
+                    <p class="text-[9px] text-subtext">Optimizado</p>
+                </div>
+            `;
+            listaApps.appendChild(card);
+            cerrarModalApps();
+            mostrarToast(`¡${app.nombre} agregada con éxito!`);
+        }
+
+        function copiarCodigosSetEdit() {
+            const textoCodigos = document.getElementById('setedit-codes-box').innerText;
+            navigator.clipboard.writeText(textoCodigos).then(() => {
+                mostrarToast("¡Códigos copiados al portapapeles!");
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = textoCodigos;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                mostrarToast("¡Códigos copiados!");
+            });
+        }
+
+        function mostrarToast(mensaje) {
+            const toast = document.getElementById('toast');
+            toast.innerText = mensaje;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
